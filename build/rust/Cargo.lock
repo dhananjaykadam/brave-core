@@ -30,7 +30,7 @@ dependencies = [
 [[package]]
 name = "adblock"
 version = "0.3.1"
-source = "git+https://github.com/brave/adblock-rust?rev=1f8dd4273ebc0339babb1cc3e38bd6f14d44e7e1#1f8dd4273ebc0339babb1cc3e38bd6f14d44e7e1"
+source = "git+https://github.com/brave/adblock-rust?rev=9032b8bb07bb71879120fc8228c0d4d1d75a0894#9032b8bb07bb71879120fc8228c0d4d1d75a0894"
 dependencies = [
  "base64 0.10.1",
  "bitflags",
@@ -185,6 +185,7 @@ version = "0.1.0"
 dependencies = [
  "adblock-ffi",
  "challenge-bypass-ristretto-ffi",
+ "https-everywhere-lib-cpp",
  "speedreader-ffi",
 ]
 
@@ -525,6 +526,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "https-everywhere-lib-core"
+version = "0.1.2"
+source = "git+https://github.com/EFForg/https-everywhere-lib-core?rev=cba72c6a04ba3ee45a2314354298f5b0972d8880#cba72c6a04ba3ee45a2314354298f5b0972d8880"
+dependencies = [
+ "lazy_static",
+ "log",
+ "lru",
+ "regex",
+ "serde_json",
+ "url 2.1.1",
+]
+
+[[package]]
+name = "https-everywhere-lib-cpp"
+version = "0.1.0"
+dependencies = [
+ "https-everywhere-lib-core",
+ "libc",
+]
+
+[[package]]
 name = "idna"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -616,6 +638,15 @@ dependencies = [
  "safemem",
  "selectors",
  "thiserror",
+]
+
+[[package]]
+name = "lru"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0609345ddee5badacf857d4f547e0e5a2e987db77085c24cd887f73573a04237"
+dependencies = [
+ "hashbrown",
 ]
 
 [[package]]
