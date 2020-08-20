@@ -14,10 +14,14 @@
 #include "chrome/browser/profiles/profile.h"
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/pref_service.h"
-#include "extensions/browser/extension_registry.h"
+#include "extensions/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "net/http/http_content_disposition.h"
 #include "net/http/http_response_headers.h"
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+#include "extensions/browser/extension_registry.h"
+#endif
 
 namespace webtorrent {
 
@@ -44,9 +48,13 @@ bool TorrentURLMatched(const GURL& url) {
 }
 
 bool IsWebtorrentEnabled(content::BrowserContext* browser_context) {
+#if BUILDFLAG(ENABLE_EXTENSIONS)
   extensions::ExtensionRegistry* registry =
     extensions::ExtensionRegistry::Get(browser_context);
   return registry->enabled_extensions().Contains(brave_webtorrent_extension_id);
+#else
+  return false;
+#endif
 }
 
 bool IsWebtorrentPrefEnabled(content::BrowserContext* browser_context) {

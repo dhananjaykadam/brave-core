@@ -13,11 +13,15 @@
 #include "brave/common/extensions/extension_constants.h"
 #include "brave/common/network_constants.h"
 #include "brave/components/brave_webtorrent/browser/webtorrent_util.h"
-#include "extensions/common/constants.h"
+#include "extensions/buildflags/buildflags.h"
 #include "net/http/http_content_disposition.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
+
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+#include "extensions/common/constants.h"
+#endif
 
 namespace {
 
@@ -30,8 +34,12 @@ bool IsViewerURL(const GURL& url) {
 
 
 bool IsWebtorrentInitiated(std::shared_ptr<brave::BraveRequestInfo> ctx) {
+#if BUILDFLAG(ENABLE_EXTENSIONS)
   return ctx->initiator_url.scheme() == extensions::kExtensionScheme &&
       ctx->initiator_url.host() == brave_webtorrent_extension_id;
+#else
+  return false;
+#endif
 }
 
 // Returns true if the resource type is a frame (i.e. a top level page) or a
@@ -66,6 +74,7 @@ int OnHeadersReceived_TorrentRedirectWork(
   (*override_response_headers)
       ->ReplaceStatusLine("HTTP/1.1 307 Temporary Redirect");
   (*override_response_headers)->RemoveHeader("Location");
+#if BUILDFLAG(ENABLE_EXTENSIONS)
   GURL url(
       base::StrCat({extensions::kExtensionScheme, "://",
       brave_webtorrent_extension_id,
@@ -73,6 +82,7 @@ int OnHeadersReceived_TorrentRedirectWork(
       ctx->request_url.spec()}));
   (*override_response_headers)->AddHeader("Location", url.spec());
   *allowed_unsafe_redirect_url = url;
+#endif
   return net::OK;
 }
 
