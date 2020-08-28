@@ -21,13 +21,11 @@
 #include "brave/components/brave_ads/browser/ads_service.h"
 #include "brave/components/brave_ads/browser/ads_service_factory.h"
 #include "brave/components/brave_ads/browser/buildflags/buildflags.h"
-#include "brave/components/brave_rewards/browser/balance_report.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service_observer.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
 #include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
-#include "brave/components/brave_rewards/browser/rewards_parameters.h"
 #include "brave/components/l10n/browser/locale_helper.h"
 #include "brave/components/l10n/common/locale_util.h"
 #include "chrome/browser/profiles/profile.h"
@@ -36,6 +34,7 @@
 #include "content/public/browser/web_ui_data_source.h"
 #include "content/public/browser/web_ui_message_handler.h"
 #include "content/public/common/bindings_policy.h"
+#include "bat/ledger/mojom_structs.h"
 
 #if defined(BRAVE_CHROMIUM_BUILD)
 #include "brave/components/brave_rewards/resources/grit/brave_rewards_resources.h"
@@ -83,10 +82,8 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void GetReconcileStamp(const base::ListValue* args);
   void SaveSetting(const base::ListValue* args);
   void UpdateAdRewards(const base::ListValue* args);
-  void OnContentSiteList(
-      std::unique_ptr<brave_rewards::ContentSiteList>);
-  void OnExcludedSiteList(
-      std::unique_ptr<brave_rewards::ContentSiteList>);
+  void OnContentSiteList(ledger::PublisherInfoList list);
+  void OnExcludedSiteList(ledger::PublisherInfoList list);
   void ExcludePublisher(const base::ListValue* args);
   void RestorePublishers(const base::ListValue* args);
   void RestorePublisher(const base::ListValue* args);
@@ -128,12 +125,10 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void OnGetWalletPassphrase(const std::string& pass);
   void OnGetContributionAmount(double amount);
   void OnGetAutoContributeProperties(
-      std::unique_ptr<brave_rewards::AutoContributeProps>
-          auto_contribute_props);
+      ledger::AutoContributePropertiesPtr properties);
   void OnGetReconcileStamp(uint64_t reconcile_stamp);
   void OnAutoContributePropsReady(
-      std::unique_ptr<brave_rewards::AutoContributeProps>
-          auto_contribute_props);
+      ledger::AutoContributePropertiesPtr properties);
   void OnIsWalletCreated(bool created);
   void GetPendingContributionsTotal(const base::ListValue* args);
   void OnGetPendingContributionsTotal(double amount);
@@ -150,28 +145,25 @@ class RewardsDOMHandler : public WebUIMessageHandler,
       const uint64_t next_payment_date_in_seconds,
       const uint64_t ad_notifications_received_this_month);
 
-  void OnGetRecurringTips(
-    std::unique_ptr<brave_rewards::ContentSiteList> list);
+  void OnGetRecurringTips(ledger::PublisherInfoList list);
 
-  void OnGetOneTimeTips(
-    std::unique_ptr<brave_rewards::ContentSiteList> list);
+  void OnGetOneTimeTips(ledger::PublisherInfoList list);
 
   void SetInlineTippingPlatformEnabled(const base::ListValue* args);
 
   void GetPendingContributions(const base::ListValue* args);
-  void OnGetPendingContributions(
-    std::unique_ptr<brave_rewards::PendingContributionInfoList> list);
+  void OnGetPendingContributions(ledger::PendingContributionInfoList list);
   void RemovePendingContribution(const base::ListValue* args);
   void RemoveAllPendingContributions(const base::ListValue* args);
   void FetchBalance(const base::ListValue* args);
   void OnFetchBalance(
-    int32_t result,
-    std::unique_ptr<brave_rewards::Balance> balance);
+    const ledger::Result result,
+    ledger::BalancePtr balance);
 
   void GetExternalWallet(const base::ListValue* args);
   void OnGetExternalWallet(
-      int32_t result,
-      std::unique_ptr<brave_rewards::ExternalWallet> wallet);
+      const ledger::Result result,
+      ledger::ExternalWalletPtr wallet);
   void ProcessRewardsPageUrl(const base::ListValue* args);
 
   void OnProcessRewardsPageUrl(
@@ -189,8 +181,8 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void OnGetBalanceReport(
       const uint32_t month,
       const uint32_t year,
-      const int32_t result,
-      const brave_rewards::BalanceReport& report);
+      const ledger::Result result,
+      ledger::BalanceReportInfoPtr report);
 
   void GetMonthlyReport(const base::ListValue* args);
 
@@ -200,12 +192,11 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void OnGetMonthlyReport(
       const uint32_t month,
       const uint32_t year,
-      const brave_rewards::MonthlyReport& report);
+      ledger::MonthlyReportInfoPtr report);
 
   void OnGetAllMonthlyReportIds(const std::vector<std::string>& ids);
 
-  void OnGetRewardsParameters(
-      std::unique_ptr<brave_rewards::RewardsParameters> parameters);
+  void OnGetRewardsParameters(ledger::RewardsParametersPtr parameters);
 
   void CompleteReset(const base::ListValue* args);
 
@@ -214,12 +205,12 @@ class RewardsDOMHandler : public WebUIMessageHandler,
                        int32_t result) override;
   void OnFetchPromotions(
       brave_rewards::RewardsService* rewards_service,
-      const uint32_t result,
-      const std::vector<brave_rewards::Promotion>& list) override;
+      const ledger::Result result,
+      const ledger::PromotionList list) override;
   void OnPromotionFinished(
       brave_rewards::RewardsService* rewards_service,
-      const uint32_t result,
-      brave_rewards::Promotion promotion) override;
+      const ledger::Result result,
+      ledger::PromotionPtr promotion) override;
   void OnRecoverWallet(
       brave_rewards::RewardsService* rewards_service,
       const int32_t result) override;
@@ -244,7 +235,7 @@ class RewardsDOMHandler : public WebUIMessageHandler,
 
   void OnPublisherListNormalized(
       brave_rewards::RewardsService* rewards_service,
-      const brave_rewards::ContentSiteList& list) override;
+      ledger::PublisherInfoList list) override;
 
   void OnTransactionHistoryChanged(
       brave_rewards::RewardsService* rewards_service) override;
@@ -277,8 +268,8 @@ class RewardsDOMHandler : public WebUIMessageHandler,
 
   void OnAttestPromotion(
       const std::string& promotion_id,
-      const int32_t result,
-      std::unique_ptr<brave_rewards::Promotion> promotion);
+      const ledger::Result result,
+      ledger::PromotionPtr promotion);
 
   void OnUnblindedTokensReady(
     brave_rewards::RewardsService* rewards_service) override;
@@ -553,7 +544,7 @@ void RewardsDOMHandler::GetRewardsParameters(const base::ListValue* args) {
 }
 
 void RewardsDOMHandler::OnGetRewardsParameters(
-    std::unique_ptr<brave_rewards::RewardsParameters> parameters) {
+    ledger::RewardsParametersPtr parameters) {
   if (!web_ui()->CanCallJavascript()) {
     return;
   }
@@ -607,48 +598,46 @@ void RewardsDOMHandler::GetAutoContributeProperties(
 }
 
 void RewardsDOMHandler::OnGetAutoContributeProperties(
-    std::unique_ptr<brave_rewards::AutoContributeProps> auto_contribute_props) {
-  if (!web_ui()->CanCallJavascript()) {
+    ledger::AutoContributePropertiesPtr properties) {
+  if (!web_ui()->CanCallJavascript() || !properties) {
     return;
   }
 
   base::DictionaryValue values;
-  values.SetBoolean("enabledContribute",
-      auto_contribute_props->enabled_contribute);
-  values.SetInteger("contributionMinTime",
-      auto_contribute_props->contribution_min_time);
+  values.SetBoolean("enabledContribute", properties->enabled_contribute);
+  values.SetInteger("contributionMinTime", properties->contribution_min_time);
   values.SetInteger("contributionMinVisits",
-      auto_contribute_props->contribution_min_visits);
+      properties->contribution_min_visits);
   values.SetBoolean("contributionNonVerified",
-      auto_contribute_props->contribution_non_verified);
-  values.SetBoolean("contributionVideos",
-      auto_contribute_props->contribution_videos);
+      properties->contribution_non_verified);
+  values.SetBoolean("contributionVideos", properties->contribution_videos);
 
   web_ui()->CallJavascriptFunctionUnsafe(
-    "brave_rewards.autoContributeProperties", values);
+    "brave_rewards.autoContributeProperties",
+    values);
 }
 
 void RewardsDOMHandler::OnFetchPromotions(
     brave_rewards::RewardsService* rewards_service,
-    const uint32_t result,
-    const std::vector<brave_rewards::Promotion>& list) {
+    const ledger::Result result,
+    const ledger::PromotionList list) {
   if (!web_ui()->CanCallJavascript()) {
     return;
   }
 
   base::ListValue promotions;
-  for (auto & item : list) {
+  for (const auto& item : list) {
     auto dict = std::make_unique<base::DictionaryValue>();
-    dict->SetString("promotionId", item.promotion_id);
-    dict->SetInteger("type", item.type);
-    dict->SetInteger("status", item.status);
-    dict->SetInteger("expiresAt", item.expires_at);
-    dict->SetDouble("amount", item.amount);
+    dict->SetString("promotionId", item->id);
+    dict->SetInteger("type", static_cast<int>(item->type));
+    dict->SetInteger("status", static_cast<int>(item->status));
+    dict->SetInteger("expiresAt", item->expires_at);
+    dict->SetDouble("amount", item->approximate_value);
     promotions.Append(std::move(dict));
   }
 
   base::DictionaryValue dict;
-  dict.SetInteger("result", result);
+  dict.SetInteger("result", static_cast<int>(result));
   dict.SetKey("promotions", std::move(promotions));
 
   web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.promotions", dict);
@@ -727,8 +716,8 @@ void RewardsDOMHandler::AttestPromotion(const base::ListValue *args) {
 
 void RewardsDOMHandler::OnAttestPromotion(
     const std::string& promotion_id,
-    const int32_t result,
-    std::unique_ptr<brave_rewards::Promotion> promotion) {
+      const ledger::Result result,
+      ledger::PromotionPtr promotion) {
   if (!web_ui()->CanCallJavascript()) {
     return;
   }
@@ -738,12 +727,12 @@ void RewardsDOMHandler::OnAttestPromotion(
 
   if (promotion) {
     promotion_dict.SetInteger("expiresAt", promotion->expires_at);
-    promotion_dict.SetDouble("amount", promotion->amount);
-    promotion_dict.SetInteger("type", promotion->type);
+    promotion_dict.SetDouble("amount", promotion->approximate_value);
+    promotion_dict.SetInteger("type", static_cast<int>(promotion->type));
   }
 
   base::DictionaryValue finish;
-  finish.SetInteger("result", result);
+  finish.SetInteger("result", static_cast<int>(result));
   finish.SetKey("promotion", std::move(promotion_dict));
 
   web_ui()->CallJavascriptFunctionUnsafe(
@@ -753,18 +742,16 @@ void RewardsDOMHandler::OnAttestPromotion(
 
 void RewardsDOMHandler::OnPromotionFinished(
     brave_rewards::RewardsService* rewards_service,
-    const uint32_t result,
-    brave_rewards::Promotion promotion) {
-  if (result != 0) {
+    const ledger::Result result,
+    ledger::PromotionPtr promotion) {
+  if (result != ledger::Result::LEDGER_OK) {
     return;
   }
 
-  auto promotion_ptr = std::make_unique<brave_rewards::Promotion>(promotion);
-
   OnAttestPromotion(
-      promotion.promotion_id,
+      promotion->id,
       result,
-      std::move(promotion_ptr));
+      std::move(promotion));
 }
 
 void RewardsDOMHandler::OnGetWalletPassphrase(const std::string& pass) {
@@ -817,14 +804,14 @@ void RewardsDOMHandler::GetReconcileStamp(const base::ListValue* args) {
 }
 
 void RewardsDOMHandler::OnAutoContributePropsReady(
-    std::unique_ptr<brave_rewards::AutoContributeProps> props) {
+    ledger::AutoContributePropertiesPtr properties) {
   rewards_service_->GetContentSiteList(
       0,
       0,
-      props->contribution_min_time,
-      props->reconcile_stamp,
-      props->contribution_non_verified,
-      props->contribution_min_visits,
+      properties->contribution_min_time,
+      properties->reconcile_stamp,
+      properties->contribution_non_verified,
+      properties->contribution_min_visits,
       base::Bind(&RewardsDOMHandler::OnContentSiteList,
                  weak_factory_.GetWeakPtr()));
 }
@@ -973,47 +960,51 @@ void RewardsDOMHandler::RestorePublisher(const base::ListValue *args) {
   rewards_service_->SetPublisherExclude(publisherKey, false);
 }
 
-void RewardsDOMHandler::OnContentSiteList(
-    std::unique_ptr<brave_rewards::ContentSiteList> list) {
-  if (web_ui()->CanCallJavascript()) {
-    auto publishers = std::make_unique<base::ListValue>();
-    for (auto const& item : *list) {
-      auto publisher = std::make_unique<base::DictionaryValue>();
-      publisher->SetString("id", item.id);
-      publisher->SetDouble("percentage", item.percentage);
-      publisher->SetString("publisherKey", item.id);
-      publisher->SetInteger("status", item.status);
-      publisher->SetInteger("excluded", item.excluded);
-      publisher->SetString("name", item.name);
-      publisher->SetString("provider", item.provider);
-      publisher->SetString("url", item.url);
-      publisher->SetString("favIcon", item.favicon_url);
-      publishers->Append(std::move(publisher));
-    }
-
-    web_ui()->CallJavascriptFunctionUnsafe(
-        "brave_rewards.contributeList", *publishers);
+void RewardsDOMHandler::OnContentSiteList(ledger::PublisherInfoList list) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
   }
+
+  auto publishers = std::make_unique<base::ListValue>();
+  for (auto const& item : list) {
+    auto publisher = std::make_unique<base::DictionaryValue>();
+    publisher->SetString("id", item->id);
+    publisher->SetDouble("percentage", item->percent);
+    publisher->SetString("publisherKey", item->id);
+    publisher->SetInteger("status", static_cast<int>(item->status));
+    publisher->SetInteger("excluded", static_cast<int>(item->excluded));
+    publisher->SetString("name", item->name);
+    publisher->SetString("provider", item->provider);
+    publisher->SetString("url", item->url);
+    publisher->SetString("favIcon", item->favicon_url);
+    publishers->Append(std::move(publisher));
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe(
+      "brave_rewards.contributeList",
+      *publishers);
 }
 
-void RewardsDOMHandler::OnExcludedSiteList(
-    std::unique_ptr<brave_rewards::ContentSiteList> list) {
-  if (web_ui()->CanCallJavascript()) {
-    auto publishers = std::make_unique<base::ListValue>();
-    for (auto const& item : *list) {
-      auto publisher = std::make_unique<base::DictionaryValue>();
-      publisher->SetString("id", item.id);
-      publisher->SetInteger("status", item.status);
-      publisher->SetString("name", item.name);
-      publisher->SetString("provider", item.provider);
-      publisher->SetString("url", item.url);
-      publisher->SetString("favIcon", item.favicon_url);
-      publishers->Append(std::move(publisher));
-    }
-
-    web_ui()->CallJavascriptFunctionUnsafe(
-        "brave_rewards.excludedList", *publishers);
+void RewardsDOMHandler::OnExcludedSiteList(ledger::PublisherInfoList list) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
   }
+
+  auto publishers = std::make_unique<base::ListValue>();
+  for (auto const& item : list) {
+    auto publisher = std::make_unique<base::DictionaryValue>();
+    publisher->SetString("id", item->id);
+    publisher->SetInteger("status", static_cast<int>(item->status));
+    publisher->SetString("name", item->name);
+    publisher->SetString("provider", item->provider);
+    publisher->SetString("url", item->url);
+    publisher->SetString("favIcon", item->favicon_url);
+    publishers->Append(std::move(publisher));
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe(
+      "brave_rewards.excludedList",
+      *publishers);
 }
 
 void RewardsDOMHandler::OnIsWalletCreated(bool created) {
@@ -1077,58 +1068,55 @@ void RewardsDOMHandler::GetRecurringTips(
   }
 }
 
-void RewardsDOMHandler::OnGetRecurringTips(
-    std::unique_ptr<brave_rewards::ContentSiteList> list) {
-  if (web_ui()->CanCallJavascript()) {
-    auto publishers = std::make_unique<base::ListValue>();
-
-    if (list) {
-      for (auto const& item : *list) {
-        auto publisher = std::make_unique<base::DictionaryValue>();
-        publisher->SetString("id", item.id);
-        publisher->SetDouble("percentage", item.percentage);
-        publisher->SetString("publisherKey", item.id);
-        publisher->SetInteger("status", item.status);
-        publisher->SetInteger("excluded", item.excluded);
-        publisher->SetString("name", item.name);
-        publisher->SetString("provider", item.provider);
-        publisher->SetString("url", item.url);
-        publisher->SetString("favIcon", item.favicon_url);
-        publisher->SetInteger("tipDate", 0);
-        publishers->Append(std::move(publisher));
-      }
-    }
-
-    web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.recurringTips",
-                                           *publishers);
+void RewardsDOMHandler::OnGetRecurringTips(ledger::PublisherInfoList list) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
   }
+  auto publishers = std::make_unique<base::ListValue>();
+
+  for (auto const& item : list) {
+    auto publisher = std::make_unique<base::DictionaryValue>();
+    publisher->SetString("id", item->id);
+    publisher->SetDouble("percentage", item->percent);
+    publisher->SetString("publisherKey", item->id);
+    publisher->SetInteger("status", static_cast<int>(item->status));
+    publisher->SetInteger("excluded", static_cast<int>(item->excluded));
+    publisher->SetString("name", item->name);
+    publisher->SetString("provider", item->provider);
+    publisher->SetString("url", item->url);
+    publisher->SetString("favIcon", item->favicon_url);
+    publisher->SetInteger("tipDate", 0);
+    publishers->Append(std::move(publisher));
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.recurringTips",
+                                         *publishers);
 }
 
-void RewardsDOMHandler::OnGetOneTimeTips(
-    std::unique_ptr<brave_rewards::ContentSiteList> list) {
-  if (web_ui()->CanCallJavascript()) {
-    auto publishers = std::make_unique<base::ListValue>();
-
-    if (list) {
-      for (auto const& item : *list) {
-        auto publisher = std::make_unique<base::DictionaryValue>();
-        publisher->SetString("id", item.id);
-        publisher->SetDouble("percentage", item.percentage);
-        publisher->SetString("publisherKey", item.id);
-        publisher->SetInteger("status", item.status);
-        publisher->SetInteger("excluded", item.excluded);
-        publisher->SetString("name", item.name);
-        publisher->SetString("provider", item.provider);
-        publisher->SetString("url", item.url);
-        publisher->SetString("favIcon", item.favicon_url);
-        publisher->SetInteger("tipDate", item.reconcile_stamp);
-        publishers->Append(std::move(publisher));
-      }
-    }
-
-    web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.currentTips",
-                                           *publishers);
+void RewardsDOMHandler::OnGetOneTimeTips(ledger::PublisherInfoList list) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
   }
+  auto publishers = std::make_unique<base::ListValue>();
+
+  for (auto const& item : list) {
+    auto publisher = std::make_unique<base::DictionaryValue>();
+    publisher->SetString("id", item->id);
+    publisher->SetDouble("percentage", item->percent);
+    publisher->SetString("publisherKey", item->id);
+    publisher->SetInteger("status", static_cast<int>(item->status));
+    publisher->SetInteger("excluded", static_cast<int>(item->excluded));
+    publisher->SetString("name", item->name);
+    publisher->SetString("provider", item->provider);
+    publisher->SetString("url", item->url);
+    publisher->SetString("favIcon", item->favicon_url);
+    publisher->SetInteger("tipDate", item->reconcile_stamp);
+    publishers->Append(std::move(publisher));
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe(
+      "brave_rewards.currentTips",
+      *publishers);
 }
 
 void RewardsDOMHandler::GetOneTimeTips(const base::ListValue *args) {
@@ -1447,8 +1435,8 @@ void RewardsDOMHandler::OnRewardsMainEnabled(
 
 void RewardsDOMHandler::OnPublisherListNormalized(
     brave_rewards::RewardsService* rewards_service,
-    const brave_rewards::ContentSiteList& list) {
-  OnContentSiteList(std::make_unique<brave_rewards::ContentSiteList>(list));
+    ledger::PublisherInfoList list) {
+  OnContentSiteList(std::move(list));
 }
 
 void RewardsDOMHandler::GetTransactionHistory(
@@ -1564,33 +1552,36 @@ void RewardsDOMHandler::GetPendingContributions(
 }
 
 void RewardsDOMHandler::OnGetPendingContributions(
-    std::unique_ptr<brave_rewards::PendingContributionInfoList> list) {
-  if (web_ui()->CanCallJavascript()) {
-    auto contributions = std::make_unique<base::ListValue>();
-    for (auto const& item : *list) {
-      auto contribution =
-          std::make_unique<base::Value>(base::Value::Type::DICTIONARY);
-      contribution->SetKey("id", base::Value(static_cast<int>(item.id)));
-      contribution->SetKey("publisherKey", base::Value(item.publisher_key));
-      contribution->SetKey("status",
-          base::Value(static_cast<int>(item.status)));
-      contribution->SetKey("name", base::Value(item.name));
-      contribution->SetKey("provider", base::Value(item.provider));
-      contribution->SetKey("url", base::Value(item.url));
-      contribution->SetKey("favIcon", base::Value(item.favicon_url));
-      contribution->SetKey("amount", base::Value(item.amount));
-      contribution->SetKey("addedDate",
-          base::Value(std::to_string(item.added_date)));
-      contribution->SetKey("type", base::Value(item.type));
-      contribution->SetKey("viewingId", base::Value(item.viewing_id));
-      contribution->SetKey("expirationDate",
-          base::Value(std::to_string(item.expiration_date)));
-      contributions->Append(std::move(contribution));
-    }
-
-    web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.pendingContributions",
-                                           *contributions);
+    ledger::PendingContributionInfoList list) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
   }
+
+  auto contributions = std::make_unique<base::ListValue>();
+  for (auto const& item : list) {
+    auto contribution =
+        std::make_unique<base::Value>(base::Value::Type::DICTIONARY);
+    contribution->SetKey("id", base::Value(static_cast<int>(item->id)));
+    contribution->SetKey("publisherKey", base::Value(item->publisher_key));
+    contribution->SetKey("status",
+        base::Value(static_cast<int>(item->status)));
+    contribution->SetKey("name", base::Value(item->name));
+    contribution->SetKey("provider", base::Value(item->provider));
+    contribution->SetKey("url", base::Value(item->url));
+    contribution->SetKey("favIcon", base::Value(item->favicon_url));
+    contribution->SetKey("amount", base::Value(item->amount));
+    contribution->SetKey("addedDate",
+        base::Value(std::to_string(item->added_date)));
+    contribution->SetKey("type", base::Value(static_cast<int>(item->type)));
+    contribution->SetKey("viewingId", base::Value(item->viewing_id));
+    contribution->SetKey("expirationDate",
+        base::Value(std::to_string(item->expiration_date)));
+    contributions->Append(std::move(contribution));
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe(
+      "brave_rewards.pendingContributions",
+      *contributions);
 }
 
 void RewardsDOMHandler::RemovePendingContribution(
@@ -1621,8 +1612,8 @@ void RewardsDOMHandler::OnPendingContributionRemoved(
 }
 
 void RewardsDOMHandler::OnFetchBalance(
-    int32_t result,
-    std::unique_ptr<brave_rewards::Balance> balance) {
+    const ledger::Result result,
+    ledger::BalancePtr balance) {
   if (!web_ui()->CanCallJavascript()) {
     return;
   }
@@ -1632,7 +1623,7 @@ void RewardsDOMHandler::OnFetchBalance(
   if (balance) {
     balance_value.SetDoubleKey("total", balance->total);
 
-    if (result == 0) {
+    if (result == ledger::Result::LEDGER_OK) {
       base::Value wallets(base::Value::Type::DICTIONARY);
       for (auto const& wallet : balance->wallets) {
         wallets.SetDoubleKey(wallet.first, wallet.second);
@@ -1644,7 +1635,7 @@ void RewardsDOMHandler::OnFetchBalance(
   }
 
   base::DictionaryValue data;
-  data.SetIntKey("status", result);
+  data.SetIntKey("status", static_cast<int>(result));
   data.SetKey("balance", std::move(balance_value));
   web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.balance", data);
 }
@@ -1671,12 +1662,12 @@ void RewardsDOMHandler::GetExternalWallet(const base::ListValue* args) {
 }
 
 void RewardsDOMHandler::OnGetExternalWallet(
-    int32_t result,
-    std::unique_ptr<brave_rewards::ExternalWallet> wallet) {
+    const ledger::Result result,
+    ledger::ExternalWalletPtr wallet) {
   if (web_ui()->CanCallJavascript()) {
     base::Value data(base::Value::Type::DICTIONARY);
 
-    data.SetIntKey("result", result);
+    data.SetIntKey("result", static_cast<int>(result));
     base::Value wallet_dict(base::Value::Type::DICTIONARY);
 
     if (wallet) {
@@ -1805,18 +1796,18 @@ void RewardsDOMHandler::ReconcileStampReset() {
 void RewardsDOMHandler::OnGetBalanceReport(
     const uint32_t month,
     const uint32_t year,
-    const int32_t result,
-    const brave_rewards::BalanceReport& report) {
-  if (!web_ui()->CanCallJavascript()) {
+    const ledger::Result result,
+    ledger::BalanceReportInfoPtr report) {
+  if (!web_ui()->CanCallJavascript() || !report) {
     return;
   }
 
   base::Value report_base(base::Value::Type::DICTIONARY);
-  report_base.SetDoubleKey("grant", report.grants);
-  report_base.SetDoubleKey("ads", report.earning_from_ads);
-  report_base.SetDoubleKey("contribute", report.auto_contribute);
-  report_base.SetDoubleKey("monthly", report.recurring_donation);
-  report_base.SetDoubleKey("tips", report.one_time_donation);
+  report_base.SetDoubleKey("grant", report->grants);
+  report_base.SetDoubleKey("ads", report->earning_from_ads);
+  report_base.SetDoubleKey("contribute", report->auto_contribute);
+  report_base.SetDoubleKey("monthly", report->recurring_donation);
+  report_base.SetDoubleKey("tips", report->one_time_donation);
 
   base::Value data(base::Value::Type::DICTIONARY);
   data.SetIntKey("month", month);
@@ -1848,8 +1839,8 @@ void RewardsDOMHandler::GetBalanceReport(const base::ListValue* args) {
 void RewardsDOMHandler::OnGetMonthlyReport(
     const uint32_t month,
     const uint32_t year,
-    const brave_rewards::MonthlyReport& report) {
-  if (!web_ui()->CanCallJavascript()) {
+    ledger::MonthlyReportInfoPtr report) {
+  if (!web_ui()->CanCallJavascript() || !report) {
     return;
   }
 
@@ -1858,45 +1849,49 @@ void RewardsDOMHandler::OnGetMonthlyReport(
   data.SetIntKey("year", year);
 
   base::Value balance_report(base::Value::Type::DICTIONARY);
-  balance_report.SetDoubleKey("grant", report.balance.grants);
-  balance_report.SetDoubleKey("ads", report.balance.earning_from_ads);
-  balance_report.SetDoubleKey("contribute", report.balance.auto_contribute);
-  balance_report.SetDoubleKey("monthly", report.balance.recurring_donation);
-  balance_report.SetDoubleKey("tips", report.balance.one_time_donation);
+  balance_report.SetDoubleKey("grant", report->balance->grants);
+  balance_report.SetDoubleKey("ads", report->balance->earning_from_ads);
+  balance_report.SetDoubleKey("contribute", report->balance->auto_contribute);
+  balance_report.SetDoubleKey("monthly", report->balance->recurring_donation);
+  balance_report.SetDoubleKey("tips", report->balance->one_time_donation);
 
   base::Value transactions(base::Value::Type::LIST);
-  for (const auto& item : report.transactions) {
+  for (const auto& item : report->transactions) {
     base::Value transaction_report(base::Value::Type::DICTIONARY);
-    transaction_report.SetDoubleKey("amount", item.amount);
-    transaction_report.SetIntKey("type", item.type);
-    transaction_report.SetIntKey("processor", item.processor);
-    transaction_report.SetIntKey("created_at", item.created_at);
+    transaction_report.SetDoubleKey("amount", item->amount);
+    transaction_report.SetIntKey("type", static_cast<int>(item->type));
+    transaction_report.SetIntKey(
+        "processor",
+        static_cast<int>(item->processor));
+    transaction_report.SetIntKey("created_at", item->created_at);
 
     transactions.Append(std::move(transaction_report));
   }
 
   base::Value contributions(base::Value::Type::LIST);
-  for (const auto& item : report.contributions) {
+  for (const auto& item : report->contributions) {
     base::Value publishers(base::Value::Type::LIST);
-    for (const auto& item : item.publishers) {
+    for (const auto& item : item->publishers) {
       base::Value publisher(base::Value::Type::DICTIONARY);
-      publisher.SetStringKey("id", item.id);
-      publisher.SetDoubleKey("percentage", item.percentage);
-      publisher.SetDoubleKey("weight", item.weight);
-      publisher.SetStringKey("publisherKey", item.id);
-      publisher.SetIntKey("status", item.status);
-      publisher.SetStringKey("name", item.name);
-      publisher.SetStringKey("provider", item.provider);
-      publisher.SetStringKey("url", item.url);
-      publisher.SetStringKey("favIcon", item.favicon_url);
+      publisher.SetStringKey("id", item->id);
+      publisher.SetDoubleKey("percentage", item->percent);
+      publisher.SetDoubleKey("weight", item->weight);
+      publisher.SetStringKey("publisherKey", item->id);
+      publisher.SetIntKey("status", static_cast<int>(item->status));
+      publisher.SetStringKey("name", item->name);
+      publisher.SetStringKey("provider", item->provider);
+      publisher.SetStringKey("url", item->url);
+      publisher.SetStringKey("favIcon", item->favicon_url);
       publishers.Append(std::move(publisher));
     }
 
     base::Value contribution_report(base::Value::Type::DICTIONARY);
-    contribution_report.SetDoubleKey("amount", item.amount);
-    contribution_report.SetIntKey("type", item.type);
-    contribution_report.SetIntKey("processor", item.processor);
-    contribution_report.SetIntKey("created_at", item.created_at);
+    contribution_report.SetDoubleKey("amount", item->amount);
+    contribution_report.SetIntKey("type", static_cast<int>(item->type));
+    contribution_report.SetIntKey(
+        "processor",
+        static_cast<int>(item->processor));
+    contribution_report.SetIntKey("created_at", item->created_at);
     contribution_report.SetKey("publishers", std::move(publishers));
     contributions.Append(std::move(contribution_report));
   }

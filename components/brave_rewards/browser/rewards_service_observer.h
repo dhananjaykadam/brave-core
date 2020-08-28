@@ -11,11 +11,7 @@
 #include <vector>
 
 #include "base/observer_list_types.h"
-#include "brave/components/brave_rewards/browser/balance_report.h"
-#include "brave/components/brave_rewards/browser/content_site.h"
-#include "brave/components/brave_rewards/browser/promotion.h"
-#include "brave/components/brave_rewards/browser/publisher_banner.h"
-#include "brave/components/brave_rewards/browser/rewards_parameters.h"
+#include "bat/ledger/mojom_structs.h"
 
 namespace brave_rewards {
 
@@ -30,15 +26,15 @@ class RewardsServiceObserver : public base::CheckedObserver {
       int32_t result) {}
   virtual void OnFetchPromotions(
       RewardsService* rewards_service,
-      const uint32_t result,
-      const std::vector<Promotion>& list) {}
+      const ledger::Result result,
+      const ledger::PromotionList list) {}
   virtual void OnRecoverWallet(
       RewardsService* rewards_service,
       const int32_t result) {}
   virtual void OnPromotionFinished(
       RewardsService* rewards_service,
-      const uint32_t result,
-      brave_rewards::Promotion promotion) {}
+      const ledger::Result result,
+      ledger::PromotionPtr promotion) {}
   virtual void OnContentSiteUpdated(
       RewardsService* rewards_service) {}
   virtual void OnExcludedSitesChanged(
@@ -63,7 +59,7 @@ class RewardsServiceObserver : public base::CheckedObserver {
       int result) {}
   virtual void OnPublisherListNormalized(
       RewardsService* rewards_service,
-      const brave_rewards::ContentSiteList& list) {}
+      ledger::PublisherInfoList list) {}
   virtual void OnTransactionHistoryChanged(
       brave_rewards::RewardsService* rewards_service) {}
   virtual void OnRecurringTipSaved(

@@ -43,14 +43,16 @@ void RewardsBrowserTestContribution::TipViaCode(
   multiple_tip_reconcile_count_ = 0;
 
   bool should_contribute = number_of_contributions > 0;
-  auto site = std::make_unique<brave_rewards::ContentSite>();
-  site->id = publisher_key;
-  site->name = publisher_key;
-  site->url = publisher_key;
-  site->status = static_cast<int>(status);
-  site->provider = "";
-  site->favicon_url = "";
-  rewards_service_->OnTip(publisher_key, amount, recurring, std::move(site));
+  auto publisher = ledger::PublisherInfo::New();
+  publisher->id = publisher_key;
+  publisher->name = publisher_key;
+  publisher->url = publisher_key;
+  publisher->status = status;
+  rewards_service_->OnTip(
+      publisher_key,
+      amount,
+      recurring,
+      std::move(publisher));
 
   if (recurring) {
     return;

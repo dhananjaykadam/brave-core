@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "base/macros.h"
-#include "brave/components/brave_rewards/browser/content_site.h"
+#include "bat/ledger/mojom_structs.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
 #include "brave/components/brave_rewards/browser/rewards_service_private_observer.h"
 
@@ -32,7 +32,7 @@ class ExtensionRewardsServiceObserver : public RewardsServiceObserver,
                            int32_t result) override;
   void OnPublisherListNormalized(
       RewardsService* rewards_service,
-      const brave_rewards::ContentSiteList& list) override;
+      ledger::PublisherInfoList list) override;
   void OnExcludedSitesChanged(RewardsService* rewards_service,
                               std::string publisher_key,
                               bool excluded) override;
@@ -70,13 +70,13 @@ class ExtensionRewardsServiceObserver : public RewardsServiceObserver,
       uint64_t windowId) override;
   void OnFetchPromotions(
       RewardsService* rewards_service,
-      const uint32_t result,
-      const std::vector<brave_rewards::Promotion>& list) override;
+      const ledger::Result result,
+      const ledger::PromotionList list) override;
 
   void OnPromotionFinished(
       RewardsService* rewards_service,
-      const uint32_t result,
-      brave_rewards::Promotion promotion) override;
+      const ledger::Result result,
+      ledger::PromotionPtr promotion) override;
 
   void OnRewardsMainEnabled(RewardsService* rewards_service,
                             bool rewards_main_enabled) override;
